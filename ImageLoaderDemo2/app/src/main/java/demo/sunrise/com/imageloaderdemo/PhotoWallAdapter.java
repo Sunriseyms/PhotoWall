@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 public class PhotoWallAdapter extends ArrayAdapter<String> implements AbsListView.OnScrollListener {
 
+    private static final String TAG = "PhotoWallAdapter";
     /**
      * 记录所有正在下载或等待下载的任务
      */
@@ -105,7 +107,9 @@ public class PhotoWallAdapter extends ArrayAdapter<String> implements AbsListVie
         if (bitmap != null){
             photo.setImageBitmap(bitmap);
         }else {
-            photo.setImageResource(R.drawable.backgroud);
+            BitmapWorkerTask task = new BitmapWorkerTask();
+            taskCollection.add(task);
+            task.execute(url);
         }
     }
 
@@ -195,7 +199,7 @@ public class PhotoWallAdapter extends ArrayAdapter<String> implements AbsListVie
                 // 图片下载完成后缓存到LrcCache中
                 addBitmapToMemoryCache(imageUri,bitmap);
             }
-            return null;
+            return bitmap;
         }
 
         @Override
@@ -203,9 +207,11 @@ public class PhotoWallAdapter extends ArrayAdapter<String> implements AbsListVie
             super.onPostExecute(bitmap);
 
             // 根据Tag找到相应的ImageView控件，将下载好的图片显示出来。
-            ImageView imageView = (ImageView) mPhotoWall.findViewWithTag(imageUri);
+            ImageView imageView = mPhotoWall.findViewWithTag(imageUri);
             if(imageView != null && bitmap != null){
                 imageView.setImageBitmap(bitmap);
+            }else if(imageView != null){
+                imageView.setImageResource(R.drawable.backgroud);
             }
             taskCollection.remove(this);
         }
